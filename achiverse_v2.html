@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>AchiVerse</title>
+  </head>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <body>
+
+
+    <div class='page_container'>
+
+      <div><h1>AchiVerse</h1></div>
+
+      <div class='world_container'></div>
+      <div class='info'>
+        <div class='genesis_time'></div>
+        <div class='statistics'></div>
+      </div>
+      <div class='extra'>
+        <canvas id="chart" width="400" height="120"></canvas>
+      </div>
+    </div>
+
+  </body>
+
+<script src="assets/js/main.js" charset="utf-8"></script>
+<script type="text/javascript">
+
+  (function(w, d) {
+
+    // define variables
+    var world_width = 100;
+    var world_height = 100;
+    var world_size = world_width * world_height;
+    var newborns = [];
+    var maxChildren = 5;
+    var lifeExtension = 10;
+
+    var map = [];
+
+    var deaths = 0;
+    var births = 0;
+    var yesterday_deaths = 0;
+    var yesterday_births = 0;
+
+    var avg_deaths = 0;
+    var avg_births = 0;
+
+    var main_text = d.getElementsByClassName('genesis_time')[0];
+    var stats_text = d.getElementsByClassName('statistics')[0];
+
+    var day = 0;
+    function genesisTime() {
+      main_text.innerHTML = 'Day: ' + day;
+    }
+
+    var chart;
+    var general_stats = [];
+    var last_year_deaths = 0;
+    var last_year_births = 0;
+    var days_per_year = 365;
+
+    function calculateStats() {
+      avg_deaths = (deaths / day).toFixed(2);
+      avg_births = (births / day).toFixed(2);
+
+      stats_text.innerHTML = `
+      <span>Population: `+newborns.length+`</span>
+      <span>Total Deaths: `+deaths+` </span>
+      <span>Total Births: `+births+`</span>
+      <span>Average Deaths per Day: `+avg_deaths+`</span>
+      <span>Average Births per Day: `+avg_births+`</span>
+      `;
+      yesterday_deaths = deaths;
+      yesterday_births = births;
+
+//ACHI
+      if(day%days_per_year==0) {
+        general_stats.push(
+          {
+            'deaths': deaths,
+            'births': births
+          }
+        );
+
+        const data = chart.data;
+        if (data.datasets.length > 0) {
+          data.labels.push(String(parseInt(day/days_per_year)));
+
+          data.datasets[0].data.push(deaths - last_year_deaths);
+          last_year_deaths = deaths;
+
+          data.datasets[1].data.push(births - last_year_births);
+          last_year_births = births;
+
+          // data.datasets[0].data.push(deaths);
+
+          chart.update();
+        }
+
+
+
+      }
+    }
+
+    function initChart() {
+      var ctx = document.getElementById('chart');
+      chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: [],
+              datasets: [{
+                  label: '# of Deaths',
+                  data: [],
+                  backgroundColor: [
+                      'rgba(255, 99, 132, 0.2)',
+                      // 'rgba(54, 162, 235, 0.2)',
+                      // 'rgba(255, 206, 86, 0.2)',
+                      // 'rgba(75, 192, 192, 0.2)',
+                      // 'rgba(153, 102, 255, 0.2)',
+                      // 'rgba(255, 159, 64, 0.2)'
+                  ],
+                  borderColor: [
+                      'rgba(255, 99, 132, 1)',
+                      // 'rgba(54, 162, 235, 1)',
+                      // 'rgba(255, 206, 86, 1)',
+                      // 'rgba(75, 192, 192, 1)',
+                      // 'rgba(153, 102, 255, 1)',
+                      // 'rgba(255, 159, 64, 1)'
+                  ],
+                  borderWidth: 1
+              },
+              {
+                  label: '# of Births',
+                  data: [],
+                  backgroundColor: [
+                      // 'rgba(255, 99, 132, 0.2)',
+                      'rgba(54, 162, 235, 0.2)',
+                      // 'rgba(255, 206, 86, 0.2)',
+                      // 'rgba(75, 192, 192, 0.2)',
+                      // 'rgba(153, 102, 255, 0.2)',
+                      // 'rgba(255, 159, 64, 0.2)'
+                  ],
+                  borderColor: [
+                      // 'rgba(255, 99, 132, 1)',
+                      'rgba(54, 162, 235, 1)',
+                      // 'rgba(255, 206, 86, 1)',
+                      // 'rgba(75, 192, 192, 1)',
+                      // 'rgba(153, 102, 255, 1)',
+                      // 'rgba(255, 159, 64, 1)'
+                  ],
+                  borderWidth: 1
+              }]
+          },
+          options: {
+              responsive: true,
+              scales: {
+                  y: {
+                      beginAtZero: true
+                  }
+              }
+          }
+      });
+    }
+
+    function generateWorld() {
+      var the_world = d.getElementsByClassName('world_container')[0];
+
+      for(var i=0; i<world_size; i++) {
+        var new_block = d.createElement('DIV');
+        // new_block.style.backgroundColor = 'black';
+
+        new_block.classList.remove('life_block', 'death_block', 'birth_block');
+        new_block.classList.add('world_block');
+
+        new_block.id = i;
+        the_world.appendChild(new_block);
+      }
+
+      genesisTime();
+      initChart();
+
+      setInterval(function() {
+        day += 1;
+        main_text.innerHTML = 'Day: ' + day;
+        if(day > 1000) {
+          maxChildren = 4;
+          lifeExtension = 20;
+        } else if(day > 2000) {
+          maxChildren = 3;
+          lifeExtension = 30;
+        } else if(day > 3000) {
+          maxChildren = 2;
+          lifeExtension = 40;
+        } else if(day > 4000) {
+          maxChildren = 1;
+          lifeExtension = 50;
+        }
+
+        calculateStats();
+      }, 10);
+
+    }
+
+    function generatePopulation(total) {
+
+      for(var i=0; i<total; i++) {
+        var new_baby = giveBirth();
+
+        var interval = setInterval(move, 10, new_baby);
+        new_baby.interval = interval;
+        newborns.push(new_baby);
+      }
+
+    }
+
+    function giveBirth() {
+
+      var randSeed = parseInt(Math.random() * (world_size-1));
+      var newborn_id = Date.now() + randSeed;
+
+      var randLife = parseInt(Math.random() * (world_size-1)) + lifeExtension;
+      // var posX = (randSeed % 10).toFixed();
+      // var posY = (randSeed / 10).toFixed();
+      // console.log(posX);
+      // console.log(posY);
+
+      var sel_block = d.getElementById(randSeed);
+      // sel_block.style.backgroundColor = 'white';
+      sel_block.classList.remove('life_block', 'death_block', 'world_block');
+      sel_block.classList.add('birth_block');
+
+      var nborn = {
+        'nid': newborn_id,
+        'pos': parseInt(randSeed),
+        'life': parseInt(randLife),
+        'steps': 0
+      };
+      births += 1;
+
+      return nborn;
+    }
+
+    function passAway(nborn) {
+      var index = newborns.findIndex(key => key.nid === nborn.nid );
+      newborns.splice(index,1);
+      clearInterval(nborn.interval);
+      var sel_block = d.getElementById(nborn.pos);
+      // sel_block.style.backgroundColor = 'red';
+
+      sel_block.classList.remove('life_block', 'birth_block', 'world_block');
+      sel_block.classList.add('death_block');
+      deaths += 1;
+    }
+
+    function normalizePosition(pos) {
+      // console.log('normalizePos',pos)
+      if (pos == 5) {
+        return 0;
+      } else if (pos == 1) {
+        return -world_width-1;
+      } else if (pos == 2) {
+        return -world_width;
+      } else if (pos == 3) {
+        return -world_width+1;
+      } else if (pos == 4) {
+        return -1;
+      } else if (pos == 6) {
+        return 1;
+      } else if (pos == 7) {
+        return world_width-1;
+      } else if (pos == 8) {
+        return world_width;
+      } else if (pos == 9) {
+        return world_width+1;
+      }
+
+    }
+
+    function checkBorder(pos, curr_pos) {
+      if((pos==2 || pos==1 || pos==3) && parseInt(curr_pos/world_height)==0){
+        return true;
+      } else if((pos==4 || pos==1 || pos==7) && curr_pos%world_width==0) {
+        return true;
+      } else if((pos==6 || pos==3 || pos==9) && (curr_pos+1)%world_width==0) {
+        return true;
+      } else if((pos==8 || pos==7 || pos==9) && parseInt(curr_pos/world_height)==world_width-1) {
+        return true;
+      } else if(pos==1 && curr_pos==0) {
+        return true;
+      } else if(pos==3 && curr_pos==world_width-1) {
+        return true;
+      } else if(pos==7 && curr_pos==world_size-world_width-1) {
+        return true;
+      } else if(pos==9 && curr_pos==world_size-1) {
+        return true;
+      }
+        // console.log(parseInt(curr_pos/world_height));
+      return false;
+    }
+
+    // function checkForDuplicates(array) {
+    //   return new Set(array).size !== array.length
+    // }
+
+    // function checkForDuplicates(array, keyName) {
+    //   return new Set(array.map(item => item[keyName])).size !== array.length
+    // }
+
+    function checkForDuplicates(array) {
+      var valuesAlreadySeen = [];
+      var nidsAlreadySeen = [];
+
+      for (var i = 0; i < array.length; i++) {
+        var value = array[i]['pos'];
+        if (valuesAlreadySeen.indexOf(value) !== -1) {
+          // nidsAlreadySeen.push(array[i]['nid']);
+
+          return [array[i]['nid'], array[valuesAlreadySeen.indexOf(value)]['nid']]; //parents
+        }
+        valuesAlreadySeen.push(value);
+        // nidsAlreadySeen.push(array[i]['nid']);
+      }
+      return false;
+    }
+
+    var one_time_parents = [];
+
+    function loveMaking() {
+      // var unique_pos = {};
+      // for(var i=0; i < newborns.length; i++) {
+      //   var npos = newborns[i].pos;
+      //   if(!unique_pos[npos])
+      //     unique_pos[npos] = 0;
+      //   unique_pos[npos] += 1;
+      //
+      // }
+      var couple = checkForDuplicates(newborns);
+
+      for(var i=0; i<couple.length; i++) {
+        if(one_time_parents.includes(couple[i])) {
+          return false;
+        }
+      }
+
+      if(couple) {
+        // console.log(couple)
+        var checkAge1 = newborns.filter( el => el.nid == couple[0] );
+        var checkAge2 = newborns.filter( el => el.nid == couple[1] );
+        if(checkAge1[0].steps < (checkAge1[0].life / 5) && checkAge2[0].steps < (checkAge2[0].life / 5)) {
+          return false; // eligibleForSex
+        }
+      }
+
+
+      var randParents = (Math.random());
+      if(randParents < 0.5)
+        randParents = 0;
+      else
+        randParents = 1;
+
+      if(randParents) {
+        for(var i=0; i<couple.length; i++) {
+          one_time_parents.push(couple[i]);
+        }
+      }
+
+      return couple; //returns false if no couple found
+    }
+
+    function move(nborn) {
+      if(!newborns.includes(nborn))
+        return;
+
+      // console.log('Move - curr_pos:', nborn.pos);
+
+      // new position  1/2/3/4/5/6/7/8/9
+      var randPos = ((Math.random() * 8) + 1).toFixed();
+
+      //calculate border failure
+      var border = checkBorder(randPos, nborn.pos)
+
+      if(border)
+        return;
+
+      //convert to x-y coordinates
+      var normalizedPos = normalizePosition(randPos);
+      // console.log('Move - new_pos:', normalizedPos)
+
+      // reset old position
+      var sel_block = d.getElementById(nborn.pos);
+      // sel_block.style.backgroundColor = 'black';
+      sel_block.classList.remove('life_block', 'death_block', 'birth_block');
+      sel_block.classList.add('world_block');
+
+      // re-apply new position
+
+      nborn.pos = nborn.pos + normalizedPos;
+      var sel_block = d.getElementById(nborn.pos);
+      // sel_block.style.backgroundColor = 'blue';
+      sel_block.classList.remove('world_block', 'death_block', 'birth_block');
+      sel_block.classList.add('life_block');
+
+      var collision = loveMaking();
+
+      // var randBaby = (Math.random());
+      // if(randBaby < 0.01)
+      //   randBaby = 0;
+      // else
+      var randBaby = 1;
+
+      // console.log(randBaby)
+      if(collision && randBaby) {
+        // for(var c=0; c<collision.length; c++) {
+        //   var index = newborns.findIndex(key => key.nid === collision[c].nid );
+        //   newborns.splice(index,1);
+        // }
+        // newborns = [];
+
+        var babies = parseInt(Math.random() * maxChildren) + 1;
+        // console.log(babies)
+
+        for(var b=0; b<babies; b++) {
+          var new_baby = giveBirth();
+          var interval = setInterval(move, 10, new_baby);
+
+          new_baby.interval = interval;
+          newborns.push(new_baby);
+
+          console.log('new baby', newborns.length)
+        }
+      }
+
+      // count steps
+      nborn.steps = nborn.steps + 1;
+      if(nborn.steps >= nborn.life) {
+        passAway(nborn);
+        console.log('DEATH: ', newborns.length);
+      }
+
+    }
+
+
+    generateWorld();
+    generatePopulation(10);
+    // setInterval(move, 100, newborns[0]);
+
+
+  })(window, document);
+
+</script>
+
+</html>
